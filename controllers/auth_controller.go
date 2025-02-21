@@ -10,6 +10,7 @@ import (
 
 type AuthController struct{}
 
+// Đăng ký tài khoản
 func (ctrl AuthController) Register(c *gin.Context) {
 	var creds services.Credentials
 	if err := c.ShouldBindJSON(&creds); err != nil {
@@ -23,9 +24,10 @@ func (ctrl AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Đăng ký thành công!"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Tạo tài khoản thành công"})
 }
 
+// Đăng nhập, trả về access token và refresh token
 func (ctrl AuthController) Login(c *gin.Context) {
 	var creds services.Credentials
 	if err := c.ShouldBindJSON(&creds); err != nil {
@@ -33,11 +35,34 @@ func (ctrl AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := services.LoginUser(creds.Email, creds.Password)
+	accessToken, refreshToken, err := services.LoginUser(creds.Email, creds.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+}
+
+// Làm mới Access Token
+func (ctrl AuthController) RefreshToken(c *gin.Context) {
+	var req struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu refresh token"})
+		return
+	}
+
+	newAccessToken, err := services.RefreshAccessToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"access_token": newAccessToken})
 }

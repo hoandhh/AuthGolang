@@ -12,16 +12,14 @@ import (
 	"Auth/models"
 )
 
-// jwtKey là khóa bí mật dùng để ký JWT
 var jwtKey = []byte("secret_key")
+var refreshKey = []byte("refresh_key")
 
-// Credentials là cấu trúc chứa thông tin đăng nhập của người dùng
 type Credentials struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-// Claims là cấu trúc chứa thông tin của JWT
 type Claims struct {
 	Email string `json:"email"`
 	jwt.StandardClaims
@@ -29,81 +27,142 @@ type Claims struct {
 
 // Mã hóa mật khẩu
 func HashPassword(password string) (string, error) {
-	// Sử dụng bcrypt để mã hóa mật khẩu với chi phí mặc định
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
 
 // Kiểm tra mật khẩu
 func CheckPasswordHash(password, hash string) bool {
-	// So sánh mật khẩu đã mã hóa với mật khẩu người dùng nhập vào
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
 // Kiểm tra email hợp lệ bằng regex
 func ValidateEmail(email string) bool {
-	// Biểu thức chính quy để kiểm tra định dạng email
 	var emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	re := regexp.MustCompile(emailRegex)
 	return re.MatchString(email)
 }
 
-// Xử lý đăng ký
+func GenerateTokens(email string) (string, string, error) {
+
+	// Tạo access token
+	// Access token hết hạn trong 15 phút
+	accessExp := time.Now().Add(15 * time.Minute)
+
+	// Claims chứa thông tin của token, gồm email và thời gian hết hạn của token
+	accessClaims := &Claims{
+		Email: email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: accessExp.Unix(),
+		},
+	}
+
+	// Tạo một JWT token mới với payload là accessClaims, ký bằng phương thức SHA256
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+
+	// Ký token với jwtKey, trả về chuỗi JWT dạng header.payload.signature
+	accessString, err := accessToken.SignedString(jwtKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	// ---------------------------------------------------------------------------------
+	// Tạo refresh token
+	refreshExp := time.Now().Add(7 * 24 * time.Hour)
+
+	// Claims chứa thông tin của token, gồm email và thời gian hết hạn của token
+	refreshClaims := &Claims{
+		Email: email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: refreshExp.Unix(),
+		},
+	}
+
+	// Tạo một JWT token mới với payload là refreshClaims, ký bằng phương thức SHA256
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+
+	// Ký token với jwtKey, trả về chuỗi JWT dạng header.payload.signature
+	refreshString, err := refreshToken.SignedString(refreshKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessString, refreshString, nil
+}
+
 func RegisterUser(email, password string) error {
-	// Kiểm tra email hợp lệ
+	// Valid email
 	if !ValidateEmail(email) {
 		return errors.New("email không hợp lệ")
 	}
 
-	// Kiểm tra độ dài mật khẩu
+	// Valid password
 	if len(password) < 6 {
-		return errors.New("mật khẩu phải có ít nhất 6 ký tự")
+		return errors.New("mật khẩu phải có ít nhất 6 kí tự")
 	}
 
-	// Mã hóa mật khẩu
-	hashedPassword, err := HashPassword(password)
+	// Kiểm tra xem email đã tồn tại chưa
+	var existingUser models.User
+	if err := database.DB.Where("email = ?", email).First(&existingUser).Error; err == nil {
+		return errors.New("email đã được sử dụng")
+	}
+
+	// Mã hoá mật khẩu
+	hashPassword, err := HashPassword(password)
 	if err != nil {
-		return errors.New("lỗi mã hóa mật khẩu")
+		return errors.New("lỗi khi mã hoá mật khẩu")
 	}
 
-	// Tạo người dùng mới và lưu vào cơ sở dữ liệu
-	user := models.User{Email: email, Password: hashedPassword}
+	// Tạo user mới và lưu vào DB
+	user := models.User{Email: email, Password: hashPassword}
 	if err := database.DB.Create(&user).Error; err != nil {
-		return errors.New("lỗi tạo tài khoản")
+		return errors.New("lỗi không thể tạo tài khoản")
 	}
 
 	return nil
 }
 
-// Xử lý đăng nhập
-func LoginUser(email, password string) (string, error) {
+func LoginUser(email, password string) (string, string, error) {
 	var user models.User
-	// Tìm người dùng trong cơ sở dữ liệu theo email
+	// Truy vấn tìm email trong DB và lấy bản ghi đầu tiên
 	if err := database.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		return "", errors.New("sai email hoặc mật khẩu")
+		return "", "", errors.New("email không đúng")
 	}
 
-	// Kiểm tra mật khẩu
+	// Kiểm tra password
 	if !CheckPasswordHash(password, user.Password) {
-		return "", errors.New("sai email hoặc mật khẩu")
+		return "", "", errors.New("mật khẩu không đúng")
 	}
 
-	// Token hết hạn sau 15 phút
-	expirationTime := time.Now().Add(15 * time.Minute)
-	claims := &Claims{
-		Email: email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	// Tạo JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	// Sinh ra accessToken và refreshToken
+	accessToken, refreshToken, err := GenerateTokens(email)
 	if err != nil {
-		return "", errors.New("không thể tạo JWT")
+		return "", "", errors.New("không thể tạo token")
 	}
 
-	return tokenString, nil
+	return accessToken, refreshToken, nil
+}
+
+func RefreshAccessToken(refreshToken string) (string, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return refreshKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return "", errors.New("refresh token không hợp lệ")
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return "", errors.New("refresh token không hợp lệ")
+	}
+
+	// Tạo access token mới
+	accessToken, _, err := GenerateTokens(claims.Email)
+	if err != nil {
+		return "", errors.New("không thể tạo access token mới")
+	}
+
+	return accessToken, nil
 }
