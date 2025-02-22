@@ -5,6 +5,8 @@ import (
 
 	"Auth/services"
 
+	"Auth/dtos"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,15 +14,15 @@ type AuthController struct{}
 
 // Đăng ký tài khoản
 func (ctrl AuthController) Register(c *gin.Context) {
-	var creds services.Credentials
-	// Đọc dữ liệu JSON từ request body vào biến creds
-	if err := c.ShouldBindJSON(&creds); err != nil {
+	var userDTO dtos.UserDTO
+	// Đọc dữ liệu JSON từ request body vào biến userDTO
+	if err := c.ShouldBindJSON(&userDTO); err != nil {
 		// gin.H là một map[string]any, giúp tạo một JSON response một cách dễ dàng và ngắn gọn
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ"})
 		return
 	}
 
-	err := services.RegisterUser(creds.Email, creds.Password)
+	err := services.RegisterUser(userDTO.Email, userDTO.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -31,13 +33,13 @@ func (ctrl AuthController) Register(c *gin.Context) {
 
 // Đăng nhập, trả về access token và refresh token
 func (ctrl AuthController) Login(c *gin.Context) {
-	var creds services.Credentials
-	if err := c.ShouldBindJSON(&creds); err != nil {
+	var userDTO dtos.UserDTO
+	if err := c.ShouldBindJSON(&userDTO); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ"})
 		return
 	}
 
-	accessToken, refreshToken, err := services.LoginUser(creds.Email, creds.Password)
+	accessToken, refreshToken, err := services.LoginUser(userDTO.Email, userDTO.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return

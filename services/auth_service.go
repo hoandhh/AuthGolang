@@ -15,11 +15,6 @@ import (
 var jwtKey = []byte("secret_key")
 var refreshKey = []byte("refresh_key")
 
-type Credentials struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 type Claims struct {
 	Email string `json:"email"`
 	jwt.StandardClaims
@@ -115,8 +110,8 @@ func RegisterUser(email, password string) error {
 	}
 
 	// Tạo user mới và lưu vào DB
-	user := models.User{Email: email, Password: hashPassword}
-	if err := database.DB.Create(&user).Error; err != nil {
+	newUser := models.User{Email: email, Password: hashPassword}
+	if err := database.DB.Create(&newUser).Error; err != nil {
 		return errors.New("lỗi không thể tạo tài khoản")
 	}
 
