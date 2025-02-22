@@ -27,6 +27,7 @@ type Claims struct {
 
 // Mã hóa mật khẩu
 func HashPassword(password string) (string, error) {
+	// Tạo một chuỗi băm của password bằng thuật toán Blowfish, DefaultCost=10 là chạy với vòng lặp 2^10 lần
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
@@ -45,7 +46,6 @@ func ValidateEmail(email string) bool {
 }
 
 func GenerateTokens(email string) (string, string, error) {
-
 	// Tạo access token
 	// Access token hết hạn trong 15 phút
 	accessExp := time.Now().Add(15 * time.Minute)
@@ -145,6 +145,12 @@ func LoginUser(email, password string) (string, string, error) {
 }
 
 func RefreshAccessToken(refreshToken string) (string, error) {
+	// Giải mã refreshToken
+	// Hàm ParseWithClaims(tokenString string, claims Claims, keyFunc Keyfunc) (*Token, error)
+	// Hàm callback func(token *jwt.Token) (interface{}, error) trả về refreshKey – khóa bí mật để xác thực token
+	// Khi giải mã JWT, ParseWithClaims sẽ ghi dữ liệu vào claims. Nếu ta truyền một giá trị (Claims{}), thì nó sẽ tạo một bản sao, và dữ liệu sẽ không được ghi vào struct gốc
+	// bởi jwt.Claims là một interface và interface trong Golang chỉ hoạt động với con trỏ.
+	// → Dùng &Claims{} để đảm bảo struct gốc có thể nhận dữ liệu sau khi giải mã.
 	token, err := jwt.ParseWithClaims(refreshToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return refreshKey, nil
 	})
@@ -153,6 +159,7 @@ func RefreshAccessToken(refreshToken string) (string, error) {
 		return "", errors.New("refresh token không hợp lệ")
 	}
 
+	// Kiểm tra xem token.Claims có phải là kiểu dữ liệu *Claims(con trỏ đến Claims) hay không.
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
 		return "", errors.New("refresh token không hợp lệ")

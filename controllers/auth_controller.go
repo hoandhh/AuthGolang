@@ -13,7 +13,9 @@ type AuthController struct{}
 // Đăng ký tài khoản
 func (ctrl AuthController) Register(c *gin.Context) {
 	var creds services.Credentials
+	// Đọc dữ liệu JSON từ request body vào biến creds
 	if err := c.ShouldBindJSON(&creds); err != nil {
+		// gin.H là một map[string]any, giúp tạo một JSON response một cách dễ dàng và ngắn gọn
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu không hợp lệ"})
 		return
 	}
@@ -49,16 +51,16 @@ func (ctrl AuthController) Login(c *gin.Context) {
 
 // Làm mới Access Token
 func (ctrl AuthController) RefreshToken(c *gin.Context) {
-	var req struct {
+	var request struct {
 		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Thiếu refresh token"})
 		return
 	}
 
-	newAccessToken, err := services.RefreshAccessToken(req.RefreshToken)
+	newAccessToken, err := services.RefreshAccessToken(request.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
