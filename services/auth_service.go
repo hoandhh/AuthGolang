@@ -168,3 +168,22 @@ func RefreshAccessToken(refreshToken string) (string, error) {
 
 	return accessToken, nil
 }
+
+func ValidateAccessToken(accessToken string) (*Claims, error) {
+	// Giải mã accessToken
+	token, err := jwt.ParseWithClaims(accessToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return nil, errors.New("access token không hợp lệ")
+	}
+
+	// Kiểm tra xem token.Claims có phải là kiểu dữ liệu *Claims(con trỏ đến Claims) hay không.
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, errors.New("access token không hợp lệ")
+	}
+
+	return claims, nil
+}
