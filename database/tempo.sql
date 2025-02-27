@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 22, 2025 at 09:33 AM
+-- Generation Time: Feb 27, 2025 at 10:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -32,6 +32,14 @@ CREATE TABLE `departments` (
   `name` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+--
+-- Dumping data for table `departments`
+--
+
+INSERT INTO `departments` (`id`, `name`) VALUES
+(1, 'IT Department'),
+(2, 'Manager');
+
 -- --------------------------------------------------------
 
 --
@@ -45,6 +53,13 @@ CREATE TABLE `employees` (
   `age` int(11) DEFAULT NULL CHECK (`age` > 0),
   `address` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `employees`
+--
+
+INSERT INTO `employees` (`id`, `email`, `name`, `age`, `address`) VALUES
+(2, 'hoannek@tempo.com', 'Hoan Dep Trai', 22, 'Ngo 1, Dich Vong Hau');
 
 -- --------------------------------------------------------
 
@@ -60,6 +75,14 @@ CREATE TABLE `employee_departments` (
   `start_date` date NOT NULL,
   `end_date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `employee_departments`
+--
+
+INSERT INTO `employee_departments` (`id`, `employee_id`, `department_id`, `position`, `start_date`, `end_date`) VALUES
+(1, 2, 1, '', '2025-02-27', NULL),
+(3, 2, 2, '', '2025-02-27', NULL);
 
 -- --------------------------------------------------------
 
@@ -124,19 +147,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `departments`
 --
 ALTER TABLE `departments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employees`
 --
 ALTER TABLE `employees`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `employee_departments`
 --
 ALTER TABLE `employee_departments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`
