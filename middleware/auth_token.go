@@ -18,6 +18,8 @@ func AuthRequired() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			// Dừng ngay việc xử lý request, không đi tiếp đến các handler khác
+			// Mỗi handler chịu trách nhiệm xử lý một request HTTP đến một endpoint (đường dẫn) cụ thể
+			// Handler nhận request từ client, xử lý logic nghiệp vụ, và trả về response
 			c.Abort()
 			return
 		}
