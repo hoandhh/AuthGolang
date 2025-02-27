@@ -55,3 +55,20 @@ func (ctrl EmployeeController) DeleteEmployee(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "xoá nhân sự thành công"})
 }
+
+// Gán nhân sự vào phòng ban
+func (ctrl EmployeeController) AssignEmployee(c *gin.Context) {
+	var employeeDepartmentDTO dtos.EmployeeDepartmentDTO
+	if err := c.ShouldBindJSON(&employeeDepartmentDTO); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
+		return
+	}
+
+	err := services.AssignEmployeeToDepartment(employeeDepartmentDTO)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "gán nhân sự vào phòng ban thành công"})
+}
