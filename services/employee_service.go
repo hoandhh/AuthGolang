@@ -68,6 +68,14 @@ func AssignEmployeeToDepartment(dto dtos.EmployeeDepartmentDTO) error {
 		return errors.New("phòng ban không tồn tại")
 	}
 
+	// Kiểm tra xem nhân sự đã được gán vào phòng ban này chưa
+	database.DB.Model(&models.EmployeeDepartment{}).
+		Where("employee_id = ? AND department_id = ?", dto.EmployeeID, dto.DepartmentID).
+		Count(&count)
+	if count > 0 {
+		return errors.New("nhân sự đã được gán vào phòng ban này")
+	}
+
 	// Tạo đối tượng EmployeeDepartment từ DTO
 	employeeDepartment := models.EmployeeDepartment{
 		EmployeeID:   dto.EmployeeID,
