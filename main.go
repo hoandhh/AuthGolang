@@ -12,9 +12,6 @@ func main() {
 
 	database.Connect()
 
-	// // Tạo bảng nếu chưa có
-	// database.DB.AutoMigrate(&models.User{})
-
 	// Thiết lập routes
 	v1 := r.Group("/api/v1")
 	{

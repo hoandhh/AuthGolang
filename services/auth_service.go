@@ -37,6 +37,7 @@ func CheckPasswordHash(password, hash string) bool {
 func ValidateEmail(email string) bool {
 	var emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	re := regexp.MustCompile(emailRegex)
+	// Kiểm tra xem email có khớp với biểu thức chính quy không
 	return re.MatchString(email)
 }
 
