@@ -2,6 +2,7 @@ package main
 
 import (
 	"Auth/database"
+	"Auth/middleware"
 	"Auth/routes"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 
 func main() {
 	r := gin.Default()
+	r.Use(middleware.CORSMiddleware())
 
 	database.Connect()
 
@@ -20,5 +22,5 @@ func main() {
 		routes.DepartmentRoutes(v1)
 	}
 
-	r.Run(":8080") // Chạy server trên port 8080
+	r.Run("0.0.0.0:8080") // Chạy server trên port 8080
 }
